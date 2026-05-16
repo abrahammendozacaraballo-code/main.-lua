@@ -1,7 +1,7 @@
 --[[
     Script: AMETHYST MVSD - Murderers vs Sheriffs Duels
     Versión: 3.0.0 COMPLETA
-    Funciones: ✅ Aimbot ✅ ESP con colores ✅ Fly ✅ Speed ✅ Noclip ✅ Todo funciona
+    Funciona: ✅ Aimbot ✅ ESP ✅ Colores ✅ Fly ✅ Todo
 --]]
 
 if game:FindFirstChild("AmethystUI_MVSD") then
@@ -23,7 +23,7 @@ local Mouse = LocalPlayer:GetMouse()
 local Camera = Workspace.CurrentCamera
 
 -- ===============================
--- COLORES ESP
+-- CONFIGURACIÓN DE COLORES
 -- ===============================
 local ESPColors = {
     ["Rojo"] = Color3.fromRGB(255, 0, 0),
@@ -44,21 +44,12 @@ local currentESPColor = "Morado"
 -- SETTINGS
 -- ===============================
 local Settings = {
-    Aimbot = false, SilentAim = false, ShowFOV = false, FOVRadius = 120,
-    TriggerBot = false, ESP = false, ESPBox = true, ESPName = true,
-    ESPDistance = true, ESPHealth = true, Chams = false, Tracers = false,
-    Speed = false, SpeedValue = 32, Fly = false, Noclip = false,
-    InfiniteJump = false, FullBright = false, NoFog = false
+    Aimbot = false, ShowFOV = false, FOVRadius = 120, TriggerBot = false,
+    ESP = false, ESPBox = true, ESPName = true, ESPDistance = true,
+    Chams = false,
+    Speed = false, SpeedValue = 32, Fly = false, Noclip = false, InfiniteJump = false,
+    FullBright = false, NoFog = false
 }
-
--- ===============================
--- VARIABLES
--- ===============================
-local flying = false
-local flyBodyVelocity = nil
-local flyBodyGyro = nil
-local espObjects = {}
-local chamsObjects = {}
 
 -- ===============================
 -- FUNCIONES DE UTILIDAD
@@ -106,9 +97,7 @@ RunService.RenderStepped:Connect(function()
             if part then
                 local screenPos = Camera:WorldToViewportPoint(part.Position)
                 if screenPos.Z > 0 then
-                    local deltaX = screenPos.X - Mouse.X
-                    local deltaY = screenPos.Y - Mouse.Y
-                    mousemoverel(deltaX / Settings.AimbotSmoothness, deltaY / Settings.AimbotSmoothness)
+                    mousemoverel(screenPos.X - Mouse.X, screenPos.Y - Mouse.Y)
                 end
             end
         end
@@ -133,8 +122,9 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- ===============================
--- ESP (VISUALES)
+-- ESP
 -- ===============================
+local espObjects = {}
 local function UpdateESP()
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character then
@@ -148,7 +138,6 @@ local function UpdateESP()
                     box.Size = Vector3.new(3, 4.5, 2)
                     box.Adornee = rootPart
                     box.AlwaysOnTop = true
-                    box.ZIndex = 0
                     box.Parent = rootPart
                     
                     local billboard = Instance.new("BillboardGui")
@@ -159,8 +148,6 @@ local function UpdateESP()
                     local text = Instance.new("TextLabel")
                     text.Size = UDim2.new(1, 0, 1, 0)
                     text.BackgroundTransparency = 1
-                    text.TextColor3 = ESPColors[currentESPColor]
-                    text.TextStrokeTransparency = 0.3
                     text.Font = Enum.Font.GothamBold
                     text.TextSize = 12
                     text.Parent = billboard
@@ -198,35 +185,32 @@ RunService.RenderStepped:Connect(UpdateESP)
 
 -- ===============================
 -- CHAMS
--- =========================------
-local function UpdateChams()
+-- ===============================
+local chamsMaterials = {}
+RunService.RenderStepped:Connect(function()
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character then
             for _, part in ipairs(player.Character:GetDescendants()) do
                 if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-                    if Settings.Chams and not chamsObjects[part] then
-                        local originalColor = part.Color
-                        chamsObjects[part] = originalColor
+                    if Settings.Chams and not chamsMaterials[part] then
+                        chamsMaterials[part] = part.Material
                         part.Material = Enum.Material.Neon
                         part.Color = ESPColors[currentESPColor]
                         part.Transparency = 0.3
-                    elseif not Settings.Chams and chamsObjects[part] then
-                        part.Material = Enum.Material.Plastic
-                        part.Color = chamsObjects[part]
+                    elseif not Settings.Chams and chamsMaterials[part] then
+                        part.Material = chamsMaterials[part]
                         part.Transparency = 0
-                        chamsObjects[part] = nil
+                        chamsMaterials[part] = nil
                     end
                 end
             end
         end
     end
-end
-
-RunService.RenderStepped:Connect(UpdateChams)
+end)
 
 -- ===============================
 -- SPEED
--- =========================------
+-- ===============================
 RunService.RenderStepped:Connect(function()
     if Settings.Speed and LocalPlayer.Character then
         local hum = LocalPlayer.Character:FindFirstChild("Humanoid")
@@ -236,7 +220,11 @@ end)
 
 -- ===============================
 -- FLY
--- =========================------
+-- ===============================
+local flying = false
+local flyVelocity = nil
+local flyGyro = nil
+
 local function StartFly()
     if not LocalPlayer.Character then return end
     local root = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
@@ -246,21 +234,20 @@ local function StartFly()
     flying = true
     hum.PlatformStand = true
     
-    flyBodyVelocity = Instance.new("BodyVelocity")
-    flyBodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
-    flyBodyVelocity.Parent = root
+    flyVelocity = Instance.new("BodyVelocity")
+    flyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
+    flyVelocity.Parent = root
     
-    flyBodyGyro = Instance.new("BodyGyro")
-    flyBodyGyro.MaxTorque = Vector3.new(1e6, 1e6, 1e6)
-    flyBodyGyro.Parent = root
+    flyGyro = Instance.new("BodyGyro")
+    flyGyro.MaxTorque = Vector3.new(1e6, 1e6, 1e6)
+    flyGyro.Parent = root
     
     local speed = 50
-    
     local con
     con = RunService.RenderStepped:Connect(function()
-        if not Settings.Fly or not flying then
-            if flyBodyVelocity then flyBodyVelocity:Destroy() end
-            if flyBodyGyro then flyBodyGyro:Destroy() end
+        if not Settings.Fly then
+            if flyVelocity then flyVelocity:Destroy() end
+            if flyGyro then flyGyro:Destroy() end
             if hum then hum.PlatformStand = false end
             flying = false
             con:Disconnect()
@@ -277,15 +264,24 @@ local function StartFly()
         if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then move = move - Vector3.new(0, 1, 0) end
         
         if move.Magnitude > 0 then move = move.Unit end
-        flyBodyVelocity.Velocity = move * speed
-        flyBodyGyro.CFrame = cf
+        flyVelocity.Velocity = move * speed
+        flyGyro.CFrame = cf
     end)
 end
 
-Settings connection
+-- Activar fly cuando se enciende
+local oldFly = Settings.Fly
+RunService.RenderStepped:Connect(function()
+    if Settings.Fly and not flying then
+        StartFly()
+    elseif not Settings.Fly and flying then
+        flying = false
+    end
+end)
+
 -- ===============================
 -- NOCLIP
--- =========================------
+-- ===============================
 RunService.Stepped:Connect(function()
     if Settings.Noclip and LocalPlayer.Character then
         for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
@@ -298,7 +294,7 @@ end)
 
 -- ===============================
 -- INFINITE JUMP
--- =========================------
+-- ===============================
 UserInputService.JumpRequest:Connect(function()
     if Settings.InfiniteJump and LocalPlayer.Character then
         local hum = LocalPlayer.Character:FindFirstChild("Humanoid")
@@ -308,7 +304,7 @@ end)
 
 -- ===============================
 -- FULLBRIGHT & NOFOG
--- =========================------
+-- ===============================
 RunService.RenderStepped:Connect(function()
     if Settings.FullBright then
         Lighting.Brightness = 2
@@ -316,17 +312,20 @@ RunService.RenderStepped:Connect(function()
         Lighting.FogEnd = 100000
     else
         Lighting.Brightness = 1
-        Lighting.FogEnd = 1000
     end
     
     if Settings.NoFog then
         Lighting.FogEnd = 100000
+    else
+        if not Settings.FullBright then
+            Lighting.FogEnd = 1000
+        end
     end
 end)
 
 -- ===============================
 -- CÍRCULO FOV
--- =========================------
+-- ===============================
 local fovCircle = nil
 RunService.RenderStepped:Connect(function()
     if Settings.ShowFOV then
@@ -336,8 +335,8 @@ RunService.RenderStepped:Connect(function()
             fovCircle.Color = Color3.fromRGB(138, 43, 226)
             fovCircle.Filled = false
             fovCircle.NumSides = 60
+            fovCircle.Visible = true
         end
-        fovCircle.Visible = true
         fovCircle.Radius = Settings.FOVRadius
         fovCircle.Position = UserInputService:GetMouseLocation()
     elseif fovCircle then
@@ -469,11 +468,15 @@ MinimizeBtn.MouseButton1Click:Connect(function()
         MainFrame:TweenPosition(UDim2.new(1, -85, 1, -85), "Out", "Quad", 0.3, true)
         TitleBar.Visible = false
         MinimizeBtn.Text = "□"
+        if TabContainer then TabContainer.Visible = false end
+        if ContentScroll then ContentScroll.Visible = false end
     else
         MainFrame:TweenSize(UDim2.new(0, 420, 0, 580), "Out", "Quad", 0.3, true)
         MainFrame:TweenPosition(UDim2.new(0.5, -210, 0.4, -290), "Out", "Quad", 0.3, true)
         TitleBar.Visible = true
         MinimizeBtn.Text = "−"
+        if TabContainer then TabContainer.Visible = true end
+        if ContentScroll then ContentScroll.Visible = true end
     end
 end)
 
@@ -491,9 +494,6 @@ TabContainer.Position = UDim2.new(0, 0, 0, 55)
 TabContainer.BackgroundTransparency = 1
 TabContainer.Parent = MainFrame
 
-local Tabs = {"⚔️ COMBAT", "👤 MOVEMENT", "🎨 VISUALS", "🎨 ESP COLOR", "🌍 WORLD"}
-local TabBtns = {}
-
 local ContentScroll = Instance.new("ScrollingFrame")
 ContentScroll.Name = "ContentScroll"
 ContentScroll.Size = UDim2.new(1, -20, 1, -115)
@@ -509,8 +509,8 @@ UIListLayout.Padding = UDim.new(0, 8)
 UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 UIListLayout.Parent = ContentScroll
 
--- CREAR BOTONES
-local function CreateToggle(text, setting, color)
+-- FUNCIONES DE UI
+local function CreateToggle(text, settingKey)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, -10, 0, 45)
     frame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
@@ -536,8 +536,8 @@ local function CreateToggle(text, setting, color)
     local toggle = Instance.new("TextButton")
     toggle.Size = UDim2.new(0, 50, 0, 30)
     toggle.Position = UDim2.new(1, -62, 0, 7)
-    toggle.BackgroundColor3 = setting and Color3.fromRGB(138, 43, 226) or Color3.fromRGB(60, 60, 70)
-    toggle.Text = setting and "ON" or "OFF"
+    toggle.BackgroundColor3 = Settings[settingKey] and Color3.fromRGB(138, 43, 226) or Color3.fromRGB(60, 60, 70)
+    toggle.Text = Settings[settingKey] and "ON" or "OFF"
     toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
     toggle.TextSize = 12
     toggle.Font = Enum.Font.GothamBold
@@ -549,6 +549,12 @@ local function CreateToggle(text, setting, color)
     toggleCorner.Parent = toggle
     
     toggle.MouseButton1Click:Connect(function()
-        setting = not setting
-        toggle.BackgroundColor3 = setting and Color3.fromRGB(138, 43, 226) or Color3.fromRGB(60, 60, 70)
-        toggle.Text = 
+        Settings[settingKey] = not Settings[settingKey]
+        toggle.BackgroundColor3 = Settings[settingKey] and Color3.fromRGB(138, 43, 226) or Color3.fromRGB(60, 60, 70)
+        toggle.Text = Settings[settingKey] and "ON" or "OFF"
+    end)
+end
+
+local function CreateSlider(text, min, max, settingKey)
+    local frame = Instance.new("Frame")
+    frame.Size 
