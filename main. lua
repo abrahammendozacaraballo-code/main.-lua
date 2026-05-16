@@ -1,7 +1,7 @@
 --[[
     Script: AMETHYST MVSD - Murderers vs Sheriffs Duels
-    Versión: 4.0.0 CORREGIDA
-    ✅ Totalmente funcional
+    Versión: 5.0.0 (CORREGIDA PARA MVSD)
+    ✅ Totalmente funcional para el juego
 --]]
 
 if game:FindFirstChild("AmethystUI_MVSD") then
@@ -44,7 +44,7 @@ local currentESPColor = "Morado"
 -- SETTINGS
 -- ===============================
 local Settings = {
-    Aimbot = false, ShowFOV = false, FOVRadius = 120, TriggerBot = false,
+    SilentAim = false, HitboxSize = 5, TriggerBot = false,
     ESP = false, ESPBox = true, ESPName = true, ESPDistance = true,
     Chams = false,
     Speed = false, SpeedValue = 32, Fly = false, Noclip = false, InfiniteJump = false,
@@ -64,48 +64,38 @@ local function GetEnemies()
     return enemies
 end
 
-local function GetClosestEnemy()
-    local enemies = GetEnemies()
-    local closest = nil
-    local shortestDist = Settings.FOVRadius
-    
-    for _, enemy in ipairs(enemies) do
-        local head = enemy.Character:FindFirstChild("Head")
-        if head then
-            local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
-            if onScreen then
-                local mousePos = UserInputService:GetMouseLocation()
-                local dist = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(mousePos.X, mousePos.Y)).Magnitude
-                if dist < shortestDist then
-                    shortestDist = dist
-                    closest = enemy
-                end
+-- ===============================
+-- SILENT AIM (HITBOX EXPANDER)
+-- ===============================
+local function ExpandHitbox(character, size)
+    for _, part in ipairs(character:GetDescendants()) do
+        if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+            local hitbox = part:FindFirstChild("HitboxExpander")
+            if not hitbox and Settings.SilentAim then
+                local expander = Instance.new("SelectionBox")
+                expander.Name = "HitboxExpander"
+                expander.Adornee = part
+                expander.Color3 = ESPColors[currentESPColor]
+                expander.Transparency = 0.7
+                expander.LineThickness = 0
+                expander.Parent = part
+            elseif hitbox and not Settings.SilentAim then
+                hitbox:Destroy()
             end
         end
     end
-    return closest
 end
 
--- ===============================
--- AIMBOT
--- ===============================
 RunService.RenderStepped:Connect(function()
-    if Settings.Aimbot then
-        local target = GetClosestEnemy()
-        if target and target.Character then
-            local part = target.Character:FindFirstChild("Head")
-            if part then
-                local screenPos = Camera:WorldToViewportPoint(part.Position)
-                if screenPos.Z > 0 then
-                    mousemoverel(screenPos.X - Mouse.X, screenPos.Y - Mouse.Y)
-                end
-            end
+    for _, player in ipairs(GetEnemies()) do
+        if player.Character then
+            ExpandHitbox(player.Character, Settings.HitboxSize)
         end
     end
 end)
 
 -- ===============================
--- TRIGGERBOT
+-- TRIGGERBOT (Auto-disparo)
 -- ===============================
 RunService.RenderStepped:Connect(function()
     if Settings.TriggerBot then
@@ -114,57 +104,54 @@ RunService.RenderStepped:Connect(function()
             local character = target.Parent
             local player = Players:GetPlayerFromCharacter(character)
             if player and player ~= LocalPlayer then
-                mouse1click()
-                task.wait(0.1)
+                -- Simula clic del mouse
+                local VirtualUser = game:GetService("VirtualUser")
+                VirtualUser:CaptureController()
+                VirtualUser:ClickButton1(Vector2.new(0, 0))
+                task.wait(0.05)
             end
         end
     end
 end)
 
 -- ===============================
--- ESP
+-- ESP (VISUALES) - VERSIÓN MVSD
 -- ===============================
 local espObjects = {}
 local function UpdateESP()
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character then
             local character = player.Character
-            local rootPart = character:FindFirstChild("HumanoidRootPart")
+            local rootPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("UpperTorso")
             local humanoid = character:FindFirstChild("Humanoid")
             
             if Settings.ESP and rootPart and humanoid and humanoid.Health > 0 then
                 if not espObjects[player] then
-                    local box = Instance.new("BoxHandleAdornment")
-                    box.Size = Vector3.new(3, 4.5, 2)
-                    box.Adornee = rootPart
-                    box.AlwaysOnTop = true
-                    box.Parent = rootPart
-                    
                     local billboard = Instance.new("BillboardGui")
+                    billboard.Name = "ESP_MVSD"
                     billboard.Size = UDim2.new(0, 200, 0, 40)
                     billboard.Adornee = rootPart
                     billboard.AlwaysOnTop = true
+                    billboard.StudsOffset = Vector3.new(0, 2, 0)
                     
                     local text = Instance.new("TextLabel")
                     text.Size = UDim2.new(1, 0, 1, 0)
                     text.BackgroundTransparency = 1
                     text.Font = Enum.Font.GothamBold
-                    text.TextSize = 12
+                    text.TextSize = 14
+                    text.TextStrokeTransparency = 0.3
+                    text.TextColor3 = ESPColors[currentESPColor]
                     text.Parent = billboard
                     
                     billboard.Parent = rootPart
-                    espObjects[player] = {box = box, billboard = billboard, text = text}
+                    espObjects[player] = {billboard = billboard, text = text}
                 end
                 
                 local data = espObjects[player]
-                if data.box then
-                    data.box.Color3 = ESPColors[currentESPColor]
-                    data.box.Visible = Settings.ESPBox
-                end
-                
                 if data.text then
-                    local info = Settings.ESPName and player.Name or ""
-                    if Settings.ESPDistance then
+                    local info = ""
+                    if Settings.ESPName then info = player.Name end
+                    if Settings.ESPDistance and rootPart then
                         local dist = (rootPart.Position - Camera.CFrame.Position).Magnitude
                         info = info .. (info ~= "" and " [" .. math.floor(dist) .. "m]" or "")
                     end
@@ -173,7 +160,6 @@ local function UpdateESP()
                     data.billboard.Visible = (Settings.ESPName or Settings.ESPDistance)
                 end
             elseif espObjects[player] then
-                if espObjects[player].box then espObjects[player].box:Destroy() end
                 if espObjects[player].billboard then espObjects[player].billboard:Destroy() end
                 espObjects[player] = nil
             end
@@ -184,7 +170,7 @@ end
 RunService.RenderStepped:Connect(UpdateESP)
 
 -- ===============================
--- CHAMS
+-- CHAMS (EFECTO NEÓN)
 -- ===============================
 local chamsMaterials = {}
 RunService.RenderStepped:Connect(function()
@@ -196,7 +182,7 @@ RunService.RenderStepped:Connect(function()
                         chamsMaterials[part] = part.Material
                         part.Material = Enum.Material.Neon
                         part.Color = ESPColors[currentESPColor]
-                        part.Transparency = 0.3
+                        part.Transparency = 0.4
                     elseif not Settings.Chams and chamsMaterials[part] then
                         part.Material = chamsMaterials[part]
                         part.Transparency = 0
@@ -242,7 +228,7 @@ local function StartFly()
     flyGyro.MaxTorque = Vector3.new(1e6, 1e6, 1e6)
     flyGyro.Parent = root
     
-    local speed = 50
+    local speed = 60
     local con
     con = RunService.RenderStepped:Connect(function()
         if not Settings.Fly then
@@ -306,7 +292,7 @@ end)
 RunService.RenderStepped:Connect(function()
     if Settings.FullBright then
         Lighting.Brightness = 2
-        Lighting.ClockTime = 12
+        Lighting.ClockTime = 14
         Lighting.FogEnd = 100000
     else
         Lighting.Brightness = 1
@@ -316,27 +302,6 @@ RunService.RenderStepped:Connect(function()
         Lighting.FogEnd = 100000
     elseif not Settings.FullBright then
         Lighting.FogEnd = 1000
-    end
-end)
-
--- ===============================
--- CÍRCULO FOV
--- ===============================
-local fovCircle = nil
-RunService.RenderStepped:Connect(function()
-    if Settings.ShowFOV then
-        if not fovCircle then
-            fovCircle = Drawing.new("Circle")
-            fovCircle.Thickness = 2
-            fovCircle.Color = Color3.fromRGB(138, 43, 226)
-            fovCircle.Filled = false
-            fovCircle.NumSides = 60
-        end
-        fovCircle.Visible = true
-        fovCircle.Radius = Settings.FOVRadius
-        fovCircle.Position = UserInputService:GetMouseLocation()
-    elseif fovCircle then
-        fovCircle.Visible = false
     end
 end)
 
@@ -560,3 +525,26 @@ local function CreateToggle(parentFrame, text, settingKey)
     
     toggle.MouseButton1Click:Connect(function()
         Settings[settingKey] = not Settings[settingKey]
+        toggle.BackgroundColor3 = Settings[settingKey] and Color3.fromRGB(138, 43, 226) or Color3.fromRGB(60, 60, 70)
+        toggle.Text = Settings[settingKey] and "ON" or "OFF"
+    end)
+end
+
+local function CreateSlider(parentFrame, text, min, max, settingKey)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, -10, 0, 65)
+    frame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+    frame.BackgroundTransparency = 0.5
+    frame.BorderSizePixel = 0
+    frame.Parent = parentFrame
+    
+    local frameCorner = Instance.new("UICorner")
+    frameCorner.CornerRadius = UDim.new(0, 10)
+    frameCorner.Parent = frame
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -20, 0, 25)
+    label.Position = UDim2.new(0, 10, 0, 5)
+    label.BackgroundTransparency = 1
+    label.Text = text .. ": " .. tostring(Settings[settingKey])
+    label.TextColor3 = Color3.fromRG
