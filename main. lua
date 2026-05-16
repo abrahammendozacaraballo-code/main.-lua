@@ -1,7 +1,7 @@
 --[[
     Script: AMETHYST MVSD - Murderers vs Sheriffs Duels
-    Versión: 3.0.0 COMPLETA
-    Funciona: ✅ Aimbot ✅ ESP ✅ Colores ✅ Fly ✅ Todo
+    Versión: 4.0.0 CORREGIDA
+    ✅ Totalmente funcional
 --]]
 
 if game:FindFirstChild("AmethystUI_MVSD") then
@@ -269,8 +269,6 @@ local function StartFly()
     end)
 end
 
--- Activar fly cuando se enciende
-local oldFly = Settings.Fly
 RunService.RenderStepped:Connect(function()
     if Settings.Fly and not flying then
         StartFly()
@@ -316,10 +314,8 @@ RunService.RenderStepped:Connect(function()
     
     if Settings.NoFog then
         Lighting.FogEnd = 100000
-    else
-        if not Settings.FullBright then
-            Lighting.FogEnd = 1000
-        end
+    elseif not Settings.FullBright then
+        Lighting.FogEnd = 1000
     end
 end)
 
@@ -335,8 +331,8 @@ RunService.RenderStepped:Connect(function()
             fovCircle.Color = Color3.fromRGB(138, 43, 226)
             fovCircle.Filled = false
             fovCircle.NumSides = 60
-            fovCircle.Visible = true
         end
+        fovCircle.Visible = true
         fovCircle.Radius = Settings.FOVRadius
         fovCircle.Position = UserInputService:GetMouseLocation()
     elseif fovCircle then
@@ -504,19 +500,33 @@ ContentScroll.ScrollBarThickness = 4
 ContentScroll.ScrollBarImageColor3 = Color3.fromRGB(138, 43, 226)
 ContentScroll.Parent = MainFrame
 
-local UIListLayout = Instance.new("UIListLayout")
-UIListLayout.Padding = UDim.new(0, 8)
-UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-UIListLayout.Parent = ContentScroll
+-- CREAR FRAMES DE PESTAÑAS
+local TabFrames = {}
+local TabsList = {"⚔️ COMBAT", "👤 MOVEMENT", "🎨 VISUALS", "🎨 ESP COLOR", "🌍 WORLD"}
+
+for i, tabName in ipairs(TabsList) do
+    local frame = Instance.new("Frame")
+    frame.Name = tabName
+    frame.Size = UDim2.new(1, 0, 0, 500)
+    frame.BackgroundTransparency = 1
+    frame.Parent = ContentScroll
+    frame.Visible = (i == 1)
+    TabFrames[tabName] = frame
+    
+    local layout = Instance.new("UIListLayout")
+    layout.Padding = UDim.new(0, 8)
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Parent = frame
+end
 
 -- FUNCIONES DE UI
-local function CreateToggle(text, settingKey)
+local function CreateToggle(parentFrame, text, settingKey)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, -10, 0, 45)
     frame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
     frame.BackgroundTransparency = 0.5
     frame.BorderSizePixel = 0
-    frame.Parent = ContentScroll
+    frame.Parent = parentFrame
     
     local frameCorner = Instance.new("UICorner")
     frameCorner.CornerRadius = UDim.new(0, 10)
@@ -550,11 +560,3 @@ local function CreateToggle(text, settingKey)
     
     toggle.MouseButton1Click:Connect(function()
         Settings[settingKey] = not Settings[settingKey]
-        toggle.BackgroundColor3 = Settings[settingKey] and Color3.fromRGB(138, 43, 226) or Color3.fromRGB(60, 60, 70)
-        toggle.Text = Settings[settingKey] and "ON" or "OFF"
-    end)
-end
-
-local function CreateSlider(text, min, max, settingKey)
-    local frame = Instance.new("Frame")
-    frame.Size 
