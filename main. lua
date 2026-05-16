@@ -1,0 +1,568 @@
+--[[
+    Script: AMETHYST MVSD - Murderers vs Sheriffs Duels
+    Versión: 3.0.0
+    Características: 
+    ✓ ESP Full customizable (cambia COLORES en tiempo real)
+    ✓ Aimbot + Silent Aim + TriggerBot
+    ✓ Menú minimizable a círculo
+    ✓ Totalmente arrastrable
+    ✓ Chams, Tracers, FOV Circle
+    ✓ Speed, Fly, Noclip, Infinite Jump
+--]]
+
+-- Anti-duplicado
+if game:FindFirstChild("AmethystUI_MVSD") then
+    game:FindFirstChild("AmethystUI_MVSD"):Destroy()
+end
+
+-- ===============================
+-- SERVICIOS
+-- ===============================
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local Lighting = game:GetService("Lighting")
+local Workspace = game:GetService("Workspace")
+local CoreGui = game:GetService("CoreGui")
+local VirtualUser = game:GetService("VirtualUser")
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+local Camera = Workspace.CurrentCamera
+
+-- ===============================
+-- CONFIGURACIÓN DE COLORES
+-- ===============================
+local ESPColors = {
+    ["Rojo"] = Color3.fromRGB(255, 0, 0),
+    ["Verde"] = Color3.fromRGB(0, 255, 0),
+    ["Azul"] = Color3.fromRGB(0, 120, 255),
+    ["Amarillo"] = Color3.fromRGB(255, 255, 0),
+    ["Morado"] = Color3.fromRGB(138, 43, 226),
+    ["Rosa"] = Color3.fromRGB(255, 105, 180),
+    ["Cian"] = Color3.fromRGB(0, 255, 255),
+    ["Naranja"] = Color3.fromRGB(255, 165, 0),
+    ["Blanco"] = Color3.fromRGB(255, 255, 255),
+    ["Neon"] = Color3.fromRGB(0, 255, 127)
+}
+
+local currentESPColor = "Rojo"
+
+-- ===============================
+-- SETTINGS DEL SCRIPT
+-- ===============================
+local Settings = {
+    -- Combat
+    Aimbot = false,
+    SilentAim = false,
+    ShowFOV = false,
+    FOVRadius = 120,
+    AimbotSmoothness = 5,
+    AimPart = "Head",
+    TriggerBot = false,
+    
+    -- Visuals
+    ESP = false,
+    ESPBox = true,
+    ESPName = true,
+    ESPDistance = true,
+    ESPHealth = true,
+    Chams = false,
+    Tracers = false,
+    ShowHealthBar = true,
+    
+    -- Movement
+    Speed = false,
+    SpeedValue = 32,
+    Fly = false,
+    Noclip = false,
+    InfiniteJump = false,
+    
+    -- World
+    FullBright = false,
+    NoFog = false,
+    TimeLock = false,
+    TimeValue = 12
+}
+
+-- ===============================
+-- CREACIÓN DEL GUI PRINCIPAL
+-- ===============================
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "AmethystUI_MVSD"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = CoreGui
+
+-- MAIN FRAME
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 420, 0, 580)
+MainFrame.Position = UDim2.new(0.5, -210, 0.4, -290)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 22)
+MainFrame.BackgroundTransparency = 0.08
+MainFrame.BorderSizePixel = 0
+MainFrame.ClipsDescendants = true
+MainFrame.Parent = ScreenGui
+
+-- Esquinas redondeadas
+local Corner = Instance.new("UICorner")
+Corner.CornerRadius = UDim.new(0, 20)
+Corner.Parent = MainFrame
+
+-- Borde neón gradiente
+local Stroke = Instance.new("UIStroke")
+Stroke.Thickness = 1.5
+Stroke.Color = Color3.fromRGB(138, 43, 226)
+Stroke.Transparency = 0.4
+Stroke.Parent = MainFrame
+
+-- Sombra
+local Shadow = Instance.new("Frame")
+Shadow.Size = UDim2.new(1, 15, 1, 15)
+Shadow.Position = UDim2.new(0, -7, 0, -7)
+Shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+Shadow.BackgroundTransparency = 0.85
+Shadow.BorderSizePixel = 0
+local ShadowCorner = Instance.new("UICorner")
+ShadowCorner.CornerRadius = UDim.new(0, 22)
+ShadowCorner.Parent = Shadow
+Shadow.Parent = MainFrame
+
+-- ===============================
+-- BARRA DE TÍTULO (ARRASTRABLE)
+-- ===============================
+local TitleBar = Instance.new("Frame")
+TitleBar.Size = UDim2.new(1, 0, 0, 55)
+TitleBar.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+TitleBar.BackgroundTransparency = 0.15
+TitleBar.BorderSizePixel = 0
+TitleBar.Parent = MainFrame
+
+local TitleCorner = Instance.new("UICorner")
+TitleCorner.CornerRadius = UDim.new(0, 20)
+TitleCorner.Parent = TitleBar
+
+-- Título con ícono
+local TitleText = Instance.new("TextLabel")
+TitleText.Size = UDim2.new(0.75, 0, 1, 0)
+TitleText.Position = UDim2.new(0, 15, 0, 0)
+TitleText.BackgroundTransparency = 1
+TitleText.Text = "✨ AMETHYST MVSD ✨"
+TitleText.TextColor3 = Color3.fromRGB(255, 255, 255)
+TitleText.TextXAlignment = Enum.TextXAlignment.Left
+TitleText.Font = Enum.Font.GothamBold
+TitleText.TextSize = 19
+TitleText.Parent = TitleBar
+
+-- Subtítulo
+local SubText = Instance.new("TextLabel")
+SubText.Size = UDim2.new(0.75, 0, 0.5, 0)
+SubText.Position = UDim2.new(0, 15, 0, 28)
+SubText.BackgroundTransparency = 1
+SubText.Text = "Murderers vs Sheriffs Duels"
+SubText.TextColor3 = Color3.fromRGB(180, 180, 200)
+SubText.TextXAlignment = Enum.TextXAlignment.Left
+SubText.Font = Enum.Font.Gotham
+SubText.TextSize = 11
+SubText.Parent = TitleBar
+
+-- Botón Minimizar (se vuelve círculo)
+local MinimizeBtn = Instance.new("TextButton")
+MinimizeBtn.Size = UDim2.new(0, 42, 0, 42)
+MinimizeBtn.Position = UDim2.new(1, -52, 0, 6)
+MinimizeBtn.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
+MinimizeBtn.Text = "−"
+MinimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+MinimizeBtn.TextSize = 28
+MinimizeBtn.Font = Enum.Font.GothamBold
+MinimizeBtn.BorderSizePixel = 0
+MinimizeBtn.Parent = TitleBar
+
+local MinCorner = Instance.new("UICorner")
+MinCorner.CornerRadius = UDim.new(1, 0)
+MinCorner.Parent = MinimizeBtn
+
+-- Botón Cerrar
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+CloseBtn.Position = UDim2.new(1, -90, 0, 12)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
+CloseBtn.Text = "✕"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.TextSize = 18
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.BorderSizePixel = 0
+CloseBtn.Parent = TitleBar
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(1, 0)
+CloseCorner.Parent = CloseBtn
+
+-- Funcionalidad de arrastre
+local function MakeDraggable(frame, dragButton)
+    local dragData = { dragging = false, dragStart = nil, startPos = nil }
+    
+    dragButton.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragData.dragging = true
+            dragData.dragStart = input.Position
+            dragData.startPos = frame.Position
+        end
+    end)
+    
+    dragButton.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragData.dragging = false
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if dragData.dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragData.dragStart
+            frame.Position = UDim2.new(dragData.startPos.X.Scale, dragData.startPos.X.Offset + delta.X, dragData.startPos.Y.Scale, dragData.startPos.Y.Offset + delta.Y)
+        end
+    end)
+end
+
+MakeDraggable(MainFrame, TitleBar)
+
+-- Minimizar funcionalidad
+local minimized = false
+MinimizeBtn.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    if minimized then
+        MainFrame:TweenSize(UDim2.new(0, 70, 0, 70), "Out", "Quad", 0.3, true)
+        MainFrame:TweenPosition(UDim2.new(1, -85, 1, -85), "Out", "Quad", 0.3, true)
+        TitleBar.Visible = false
+        MinimizeBtn.Text = "□"
+        for _, v in pairs(MainFrame:GetChildren()) do
+            if v.Name == "TabContainer" or v.Name == "ContentScroll" then
+                v.Visible = false
+            end
+        end
+    else
+        MainFrame:TweenSize(UDim2.new(0, 420, 0, 580), "Out", "Quad", 0.3, true)
+        MainFrame:TweenPosition(UDim2.new(0.5, -210, 0.4, -290), "Out", "Quad", 0.3, true)
+        TitleBar.Visible = true
+        MinimizeBtn.Text = "−"
+        for _, v in pairs(MainFrame:GetChildren()) do
+            if v.Name == "TabContainer" or v.Name == "ContentScroll" then
+                v.Visible = true
+            end
+        end
+    end
+end)
+
+CloseBtn.MouseButton1Click:Connect(function()
+    MainFrame:TweenSize(UDim2.new(0, 0, 0, 0), "Out", "Quad", 0.2, true)
+    task.wait(0.2)
+    ScreenGui:Destroy()
+end)
+
+-- ===============================
+-- PESTAÑAS
+-- ===============================
+local TabContainer = Instance.new("Frame")
+TabContainer.Name = "TabContainer"
+TabContainer.Size = UDim2.new(1, 0, 0, 48)
+TabContainer.Position = UDim2.new(0, 0, 0, 55)
+TabContainer.BackgroundTransparency = 1
+TabContainer.Parent = MainFrame
+
+local Tabs = {"⚔️ COMBAT", "👤 MOVEMENT", "🎨 VISUALS", "🎨 ESP COLOR", "🌍 WORLD"}
+local TabBtns = {}
+
+for i, tabName in ipairs(Tabs) do
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.2, 0, 1, 0)
+    btn.Position = UDim2.new((i-1) * 0.2, 0, 0, 0)
+    btn.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
+    btn.BackgroundTransparency = i == 1 and 0.85 or 1
+    btn.Text = tabName
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize = 12
+    btn.Font = Enum.Font.GothamSemibold
+    btn.BorderSizePixel = 0
+    btn.Parent = TabContainer
+    
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 10)
+    btnCorner.Parent = btn
+    
+    TabBtns[tabName] = btn
+end
+
+-- ===============================
+-- CONTENIDO SCROLLABLE
+-- ===============================
+local ContentScroll = Instance.new("ScrollingFrame")
+ContentScroll.Name = "ContentScroll"
+ContentScroll.Size = UDim2.new(1, -20, 1, -115)
+ContentScroll.Position = UDim2.new(0, 10, 0, 110)
+ContentScroll.BackgroundTransparency = 1
+ContentScroll.BorderSizePixel = 0
+ContentScroll.ScrollBarThickness = 4
+ContentScroll.ScrollBarImageColor3 = Color3.fromRGB(138, 43, 226)
+ContentScroll.Parent = MainFrame
+
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.Padding = UDim.new(0, 8)
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.Parent = ContentScroll
+
+-- ===============================
+-- FUNCIÓN PARA CREAR BOTONES
+-- ===============================
+local function CreateToggle(text, setting, color)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, -10, 0, 45)
+    frame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+    frame.BackgroundTransparency = 0.5
+    frame.BorderSizePixel = 0
+    frame.Parent = ContentScroll
+    
+    local frameCorner = Instance.new("UICorner")
+    frameCorner.CornerRadius = UDim.new(0, 10)
+    frameCorner.Parent = frame
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.7, 0, 1, 0)
+    label.Position = UDim2.new(0, 12, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.fromRGB(220, 220, 255)
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 14
+    label.Parent = frame
+    
+    local toggle = Instance.new("TextButton")
+    toggle.Size = UDim2.new(0, 50, 0, 30)
+    toggle.Position = UDim2.new(1, -62, 0, 7)
+    toggle.BackgroundColor3 = setting and Color3.fromRGB(138, 43, 226) or Color3.fromRGB(60, 60, 70)
+    toggle.Text = setting and "ON" or "OFF"
+    toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    toggle.TextSize = 12
+    toggle.Font = Enum.Font.GothamBold
+    toggle.BorderSizePixel = 0
+    toggle.Parent = frame
+    
+    local toggleCorner = Instance.new("UICorner")
+    toggleCorner.CornerRadius = UDim.new(0, 8)
+    toggleCorner.Parent = toggle
+    
+    toggle.MouseButton1Click:Connect(function()
+        setting = not setting
+        toggle.BackgroundColor3 = setting and Color3.fromRGB(138, 43, 226) or Color3.fromRGB(60, 60, 70)
+        toggle.Text = setting and "ON" or "OFF"
+    end)
+    
+    return frame, toggle
+end
+
+local function CreateSlider(text, min, max, setting, callback)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, -10, 0, 65)
+    frame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+    frame.BackgroundTransparency = 0.5
+    frame.BorderSizePixel = 0
+    frame.Parent = ContentScroll
+    
+    local frameCorner = Instance.new("UICorner")
+    frameCorner.CornerRadius = UDim.new(0, 10)
+    frameCorner.Parent = frame
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -20, 0, 25)
+    label.Position = UDim2.new(0, 10, 0, 5)
+    label.BackgroundTransparency = 1
+    label.Text = text .. ": " .. tostring(setting)
+    label.TextColor3 = Color3.fromRGB(220, 220, 255)
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 13
+    label.Parent = frame
+    
+    local slider = Instance.new("Frame")
+    slider.Size = UDim2.new(0.9, 0, 0, 4)
+    slider.Position = UDim2.new(0.05, 0, 0, 40)
+    slider.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+    slider.BorderSizePixel = 0
+    slider.Parent = frame
+    
+    local sliderCorner = Instance.new("UICorner")
+    sliderCorner.CornerRadius = UDim.new(1, 0)
+    sliderCorner.Parent = slider
+    
+    local fill = Instance.new("Frame")
+    fill.Size = UDim2.new((setting - min) / (max - min), 0, 1, 0)
+    fill.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
+    fill.BorderSizePixel = 0
+    fill.Parent = slider
+    
+    local fillCorner = Instance.new("UICorner")
+    fillCorner.CornerRadius = UDim.new(1, 0)
+    fillCorner.Parent = fill
+    
+    local grabbing = false
+    
+    slider.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            grabbing = true
+        end
+    end)
+    
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            grabbing = false
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if grabbing and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local relativeX = math.clamp((input.Position.X - slider.AbsolutePosition.X) / slider.AbsoluteSize.X, 0, 1)
+            local value = min + (max - min) * relativeX
+            setting = math.floor(value)
+            fill.Size = UDim2.new(relativeX, 0, 1, 0)
+            label.Text = text .. ": " .. tostring(setting)
+            callback(setting)
+        end
+    end)
+    
+    return frame
+end
+
+-- ===============================
+-- PESTAÑA COMBAT
+-- ===============================
+local combatFrame = Instance.new("Frame")
+combatFrame.Name = "⚔️ COMBAT"
+combatFrame.Size = UDim2.new(1, 0, 0, 400)
+combatFrame.BackgroundTransparency = 1
+combatFrame.Parent = ContentScroll
+combatFrame.Visible = true
+
+local combatLayout = Instance.new("UIListLayout")
+combatLayout.Padding = UDim.new(0, 8)
+combatLayout.Parent = combatFrame
+
+CreateToggle("🎯 Aimbot (Auto-aim)", Settings.Aimbot, Color3.fromRGB(138, 43, 226))
+CreateToggle("🔫 Silent Aim (Invisible aim)", Settings.SilentAim, Color3.fromRGB(138, 43, 226))
+CreateToggle("⭕ Mostrar Círculo FOV", Settings.ShowFOV, Color3.fromRGB(138, 43, 226))
+CreateToggle("⚡ TriggerBot (Auto-disparo)", Settings.TriggerBot, Color3.fromRGB(138, 43, 226))
+CreateSlider("📏 Radio FOV", 50, 300, Settings.FOVRadius, function(v) Settings.FOVRadius = v end)
+
+-- ===============================
+-- PESTAÑA MOVEMENT
+-- ===============================
+local moveFrame = Instance.new("Frame")
+moveFrame.Name = "👤 MOVEMENT"
+moveFrame.Size = UDim2.new(1, 0, 0, 400)
+moveFrame.BackgroundTransparency = 1
+moveFrame.Parent = ContentScroll
+moveFrame.Visible = false
+
+local moveLayout = Instance.new("UIListLayout")
+moveLayout.Padding = UDim.new(0, 8)
+moveLayout.Parent = moveFrame
+
+CreateToggle("💨 Speed Hack", Settings.Speed, Color3.fromRGB(138, 43, 226))
+CreateSlider("🏃 Velocidad", 16, 120, Settings.SpeedValue, function(v) Settings.SpeedValue = v end)
+CreateToggle("🕊️ Fly Mode", Settings.Fly, Color3.fromRGB(138, 43, 226))
+CreateToggle("🚪 Noclip (Atravesar paredes)", Settings.Noclip, Color3.fromRGB(138, 43, 226))
+CreateToggle("🦘 Infinite Jump", Settings.InfiniteJump, Color3.fromRGB(138, 43, 226))
+
+-- ===============================
+-- PESTAÑA VISUALS
+-- ===============================
+local visualFrame = Instance.new("Frame")
+visualFrame.Name = "🎨 VISUALS"
+visualFrame.Size = UDim2.new(1, 0, 0, 500)
+visualFrame.BackgroundTransparency = 1
+visualFrame.Parent = ContentScroll
+visualFrame.Visible = false
+
+local visualLayout = Instance.new("UIListLayout")
+visualLayout.Padding = UDim.new(0, 8)
+visualLayout.Parent = visualFrame
+
+CreateToggle("👁️ ESP (Ver enemigos)", Settings.ESP, Color3.fromRGB(138, 43, 226))
+CreateToggle("📦 ESP Box", Settings.ESPBox, Color3.fromRGB(138, 43, 226))
+CreateToggle("🏷️ ESP Name", Settings.ESPName, Color3.fromRGB(138, 43, 226))
+CreateToggle("📏 ESP Distance", Settings.ESPDistance, Color3.fromRGB(138, 43, 226))
+CreateToggle("❤️ ESP Health", Settings.ESPHealth, Color3.fromRGB(138, 43, 226))
+CreateToggle("✨ Chams (Neon effect)", Settings.Chams, Color3.fromRGB(138, 43, 226))
+CreateToggle("📌 Tracers (Líneas hacia enemigos)", Settings.Tracers, Color3.fromRGB(138, 43, 226))
+
+-- ===============================
+-- PESTAÑA ESP COLOR (Selector de colores)
+-- ===============================
+local colorFrame = Instance.new("Frame")
+colorFrame.Name = "🎨 ESP COLOR"
+colorFrame.Size = UDim2.new(1, 0, 0, 500)
+colorFrame.BackgroundTransparency = 1
+colorFrame.Parent = ContentScroll
+colorFrame.Visible = false
+
+local colorLayout = Instance.new("UIListLayout")
+colorLayout.Padding = UDim.new(0, 8)
+colorLayout.Parent = colorFrame
+
+-- Texto de color actual
+local currentColorText = Instance.new("TextLabel")
+currentColorText.Size = UDim2.new(1, -10, 0, 40)
+currentColorText.Position = UDim2.new(0, 5, 0, 0)
+currentColorText.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+currentColorText.BackgroundTransparency = 0.5
+currentColorText.Text = "🎨 Color Actual: " .. currentESPColor
+currentColorText.TextColor3 = ESPColors[currentESPColor]
+currentColorText.TextSize = 14
+currentColorText.Font = Enum.Font.GothamBold
+currentColorText.Parent = colorFrame
+
+local colorCorner = Instance.new("UICorner")
+colorCorner.CornerRadius = UDim.new(0, 10)
+colorCorner.Parent = currentColorText
+
+-- Botones de colores
+local colorNames = {"Rojo", "Verde", "Azul", "Amarillo", "Morado", "Rosa", "Cian", "Naranja", "Blanco", "Neon"}
+
+for i, colorName in ipairs(colorNames) do
+    local colorBtn = Instance.new("TextButton")
+    colorBtn.Size = UDim2.new(0.45, -10, 0, 45)
+    colorBtn.Position = i % 2 == 1 and UDim2.new(0, 5, 0, 50 + math.floor((i-1)/2) * 55) or UDim2.new(0.5, 5, 0, 50 + math.floor((i-1)/2) * 55)
+    colorBtn.BackgroundColor3 = ESPColors[colorName]
+    colorBtn.Text = colorName
+    colorBtn.TextColor3 = colorName == "Blanco" and Color3.fromRGB(0, 0, 0) or Color3.fromRGB(255, 255, 255)
+    colorBtn.TextSize = 13
+    colorBtn.Font = Enum.Font.GothamBold
+    colorBtn.BorderSizePixel = 0
+    colorBtn.Parent = colorFrame
+    
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 10)
+    btnCorner.Parent = colorBtn
+    
+    colorBtn.MouseButton1Click:Connect(function()
+        currentESPColor = colorName
+        currentColorText.Text = "🎨 Color Actual: " .. currentESPColor
+        currentColorText.TextColor3 = ESPColors[currentESPColor]
+        -- Aquí puedes actualizar el color del ESP en tiempo real
+    end)
+end
+
+-- ===============================
+-- PESTAÑA WORLD
+-- ===============================
+local worldFrame = Instance.new("Frame")
+worldFrame.Name = "🌍 WORLD"
+worldFrame.Size = UDim2.new(1, 0, 0, 400)
+worldFrame.BackgroundTransparency = 1
+worldFrame.Parent = ContentScroll
+worldFrame.Visible = false
+
+local worldLayout = Instance.new("UIListLayout")
+worldLayout.Padding = UDim.new(0, 8)
+worldLayout.Parent = worldFrame
+
+CreateToggle("☀️ FullBright", Settings.FullBright, Color3.fromRGB(138, 43, 226))
+CreateToggle("🌫️ Remover Niebla", Settings.NoFog, Color3.fromRGB(138, 4
